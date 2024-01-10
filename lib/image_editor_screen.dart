@@ -19,6 +19,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   Color drawColor = Colors.white;
   PaintMode paintMode = PaintMode.none;
 
+  bool editText = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,7 +38,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
             ),
 
             // default bottom bar
-            if (paintMode == PaintMode.none)
+            if (paintMode != PaintMode.freeStyle && !editText)
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
@@ -117,6 +119,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                 ),
               ),
 
+            // text bottom bar
+            if (editText)
+              const Align(
+                alignment: Alignment.bottomCenter,
+                child: Text("Hello World"),
+              ),
+
             // draw bottom bar
             if (paintMode == PaintMode.freeStyle)
               Align(
@@ -129,7 +138,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
               ),
 
             // default top bar
-            if (paintMode == PaintMode.none)
+            if (!editText && paintMode != PaintMode.freeStyle)
               _DefaultTopBar(
                 onEnterDrawMode: () {
                   _imageKey.currentState?.changePaintMode(PaintMode.freeStyle);
@@ -137,8 +146,31 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                     paintMode = PaintMode.freeStyle;
                   });
                 },
+                onEnterTextMode: () {
+                  _imageKey.currentState?.changePaintMode(PaintMode.text);
+                  setState(() {
+                    paintMode = PaintMode.text;
+                    editText = true;
+                  });
+                },
                 onUndoTap: () {
                   _imageKey.currentState?.undo();
+                },
+              ),
+
+            // text top bar
+            if (editText)
+              _TextTopBar(
+                initialColor: drawColor,
+                onDone: (text) {
+                  _imageKey.currentState?.addText(text);
+                  setState(() {
+                    editText = false;
+                  });
+                },
+                onColorChanged: (newColor) {
+                  drawColor = newColor;
+                  _imageKey.currentState?.updateColor(newColor);
                 },
               ),
 
@@ -162,6 +194,110 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                   });
                 },
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TextTopBar extends StatefulWidget {
+  final Color _initialColor;
+  final void Function(String text)? _onDone;
+  final void Function(Color color)? _onColorChanged;
+  const _TextTopBar({
+    required Color initialColor,
+    void Function(String text)? onDone,
+    void Function(Color color)? onColorChanged,
+  })  : _onDone = onDone,
+        _onColorChanged = onColorChanged,
+        _initialColor = initialColor;
+
+  @override
+  State<_TextTopBar> createState() => _TextTopBarState();
+}
+
+class _TextTopBarState extends State<_TextTopBar> {
+  final FocusNode _textFocus = FocusNode();
+  final TextEditingController _textController = TextEditingController();
+
+  late Color color = widget._initialColor;
+
+  @override
+  void initState() {
+    _textFocus.requestFocus();
+    debugPrint("requestFocus");
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _textFocus.dispose();
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.4),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    widget._onDone?.call(_textController.text);
+                  },
+                  child: const Text(
+                    "Done",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                const SizedBox(
+                  height: 24,
+                ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: ColorSlider(
+                    onColorChanged: (selectedColor) {
+                      setState(() {
+                        color = selectedColor;
+                      });
+                      widget._onColorChanged?.call(selectedColor);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            Align(
+              alignment: Alignment.center,
+              child: TextField(
+                focusNode: _textFocus,
+                controller: _textController,
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  hintText: "Add text",
+                  hintStyle: TextStyle(
+                    fontSize: 24,
+                    color: color.withOpacity(0.5),
+                  ),
+                ),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 24,
+                  color: color,
+                ),
+              ),
+            ),
           ],
         ),
       ),
