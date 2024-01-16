@@ -20,6 +20,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   final _imageKey = GlobalKey<ImageSketcherState>();
   final _key = GlobalKey<ScaffoldState>();
 
+  final TextEditingController _captController = TextEditingController();
+
   Color drawColor = Colors.white;
   PaintMode paintMode = PaintMode.none;
 
@@ -61,7 +63,10 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ResultScreen(image: image),
+            builder: (context) => ResultScreen(
+              image: image,
+              caption: _captController.text,
+            ),
           ),
         );
       } else {
@@ -115,21 +120,22 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                             color: AppColors.grey,
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.camera_alt,
                               color: Colors.white,
                             ),
-                            SizedBox(
+                            const SizedBox(
                               width: 8,
                             ),
                             Expanded(
                               child: TextField(
-                                style: TextStyle(
+                                controller: _captController,
+                                style: const TextStyle(
                                   color: Colors.white,
                                 ),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   border: InputBorder.none,
                                   hintText: "Add a caption..",
                                   hintStyle: TextStyle(
