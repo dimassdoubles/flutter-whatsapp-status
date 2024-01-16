@@ -1,9 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_sketcher/image_sketcher.dart';
 import 'package:whatsapp_status/app_colors.dart';
 import 'package:whatsapp_status/action_button.dart';
 import 'package:whatsapp_status/color_slider.dart';
+import 'package:whatsapp_status/image_utils.dart';
 import 'package:whatsapp_status/line_weight_selector.dart';
+import 'package:whatsapp_status/result_screen.dart';
 
 class ImageEditorScreen extends StatefulWidget {
   const ImageEditorScreen({super.key});
@@ -20,6 +24,58 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   PaintMode paintMode = PaintMode.none;
 
   bool editText = false;
+
+  void saveImage() async {
+    debugPrint("saveImage");
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  color: AppColors.blue,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    try {
+      Uint8List? byteArray = await _imageKey.currentState?.exportImage();
+      if (byteArray != null) {
+        debugPrint("saveImage berhasil mendapatkan unit8list");
+
+        final image = await ImageUtils.uint8ListToFile(byteArray);
+
+        // ignore: use_build_context_synchronously
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ResultScreen(image: image),
+          ),
+        );
+      } else {
+        debugPrint("saveImage uin8List kosong");
+
+        // ignore: use_build_context_synchronously
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint("saveImage error: $e");
+      // ignore: use_build_context_synchronously
+      Navigator.pop(context);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +164,9 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
                             ),
                           ),
                           ActionButton(
-                            onTap: () {},
+                            onTap: () {
+                              saveImage();
+                            },
                             icon: Icons.send,
                             backgroundColor: AppColors.blue,
                           ),
